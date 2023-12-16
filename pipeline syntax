@@ -1,0 +1,48 @@
+pipeline{
+    agent any
+    stages{
+        stage('checkout'){
+            steps{
+                checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/srinaidu-24/dockerjenkin.git']])
+            }
+        }
+        stage('build'){
+            steps{
+                sh 'mvn package'
+            }
+        }
+        stage('deploy to development'){
+            steps{
+                deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://15.206.167.249:8080/manager/html')], contextPath: null, war: '**/*.war'
+            }
+        }
+        stage('user approval for TEST'){
+            steps{
+                input "approve to proceed with deployment"
+            }
+        }
+        stage('deploy to TEST'){
+            steps{
+                deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://65.1.64.182:8080/manager/html')], contextPath: null, war: '**/*.war'
+            }
+        }
+        stage('user approval for PROD'){
+            steps{
+                input "approve to proceed with deployment"
+            }
+        }
+        stage('deploy to PROD'){
+            steps{
+                deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://13.232.162.243:8080/manager/html')], contextPath: null, war: '**/*.war'
+            }
+        }
+    }
+    post{
+        success{
+            emailext body: 'from Jenkins', subject: 'Success', to: 'ramisettisrilatha35@gmail.com'
+        }
+        failure{
+            emailext body: 'from Jenkins', subject: 'Failure', to: 'ramisettisrilatha35@gmail.com'
+        }
+    }
+}
